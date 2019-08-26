@@ -1,39 +1,35 @@
 service: auto-cleanup
-
 custom:
-  company: servian # change to your company name
-  log_level: INFO # DEBUG for dev | INFO for prod
-  region: ${opt:region, "ap-southeast-2"} # AWS deployment region
-  pythonRequirements: # allows us to deploy a newer version of boto3
+  company: servian
+  log_level: INFO
+  region: '${opt:region, "ap-southeast-2"}'
+  pythonRequirements:
     noDeploy:
-      [
-        "docutils",
-        "jmespath",
-        "python-dateutil",
-        "s3transfer",
-        "six",
-        "pip",
-        "setuptools",
-      ]
+      - docutils
+      - jmespath
+      - python-dateutil
+      - s3transfer
+      - six
+      - pip
+      - setuptools
   remover:
     prompt: false
     buckets:
       - ${self:service}-${self:provider.stage}-resourcetreebucket-${self:custom.company}
-
 provider:
   name: aws
   runtime: python3.7
-  stage: ${opt:stage, "prod"} # Override via CLI "--stage dev"
+  stage: '${opt:stage, "prod"}'
   region: ${self:custom.region}
-  profile: ${opt:profile, ""} # Override via CLI "--aws-profile saml"
+  profile: '${opt:profile, ""}'
   environment:
-    PYTHONPATH: "/var/task/auto_cleanup:/var/task/boto3:/var/task/botocore:/var/task/dynamodb_json:/var/task/simplejson:/var/task/treelib:/var/runtime"
+    PYTHONPATH: /var/task/auto_cleanup:/var/task/boto3:/var/task/botocore:/var/task/dynamodb_json:/var/task/simplejson:/var/task/treelib:/var/runtime
   iamRoleStatements:
     - Effect: Allow
       Action:
         - cloudformation:DeleteStack
         - cloudformation:DescribeStacks
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - dynamodb:BatchWriteItem
@@ -43,7 +39,7 @@ provider:
         - dynamodb:ListTables
         - dynamodb:PutItem
         - dynamodb:Scan
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - ec2:DeleteSecurityGroup
@@ -61,17 +57,17 @@ provider:
         - ec2:ReleaseAddress
         - ec2:StopInstances
         - ec2:TerminateInstances
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - elasticbeanstalk:DeleteApplication
         - elasticbeanstalk:DescribeApplications
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - elasticmapreduce:ListClusters
         - elasticmapreduce:TerminateJobFlows
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - iam:DeleteInstanceProfile
@@ -85,19 +81,19 @@ provider:
         - iam:ListRolePolicies
         - iam:ListRoles
         - iam:RemoveRoleFromInstanceProfile
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - lambda:DeleteFunction
         - lambda:ListFunctions
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - redshift:DeleteCluster
         - redshift:DeleteClusterSnapshot
         - redshift:DescribeClusterSnapshots
         - redshift:DescribeClusters
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - rds:DeleteDBInstance
@@ -105,7 +101,7 @@ provider:
         - rds:DescribeDBInstances
         - rds:DescribeDBSnapshots
         - rds:ModifyDBInstance
-      Resource: "*"
+      Resource: '*'
     - Effect: Allow
       Action:
         - s3:DeleteBucket
@@ -113,15 +109,13 @@ provider:
         - s3:DeleteObjectVersion
         - s3:List*
         - s3:PutObject
-      Resource: "*"
+      Resource: '*'
   tracing:
     lambda: true
-
 package:
   individually: true
   exclude:
     - node_modules/**
-
 functions:
   AutoCleanup:
     handler: auto_cleanup.lambda_handler.lambda_handler
@@ -137,7 +131,7 @@ functions:
         - simplejson/**
         - treelib/**
     environment:
-      LOGLEVEL: INFO # change to DEBUG for testing
+      LOGLEVEL: INFO
       RESOURCETREEBUCKET: ${self:service}-${self:provider.stage}-resourcetreebucket-${self:custom.company}
       SETTINGSTABLE: ${self:service}-settings-${self:provider.stage}
       WHITELISTTABLE: ${self:service}-whitelist-${self:provider.stage}
@@ -145,7 +139,6 @@ functions:
       - schedule:
           rate: rate(3 days)
           enabled: true
-
 resources:
   Resources:
     SettingsTable:
@@ -169,7 +162,7 @@ resources:
           - AttributeName: resource_id
             AttributeType: S
           - AttributeName: expire_at
-            AttributeType: N
+            AttributeType: 'N'
         KeySchema:
           - AttributeName: resource_id
             KeyType: HASH
@@ -181,11 +174,10 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-    ResourceTreeBuckett:
+    ResourceTreeBucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:service}-${self:provider.stage}-resourcetreebucket-${self:custom.company}
-
 plugins:
   - serverless-python-requirements
   - serverless-s3-remover
